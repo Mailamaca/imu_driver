@@ -1,0 +1,8 @@
+custom_motors_interface:
+    ros__parameters:
+        
+        topics:
+            out_spur_gear_encoder: "/hw/encoders/sg"  
+            
+        out_msg_period: 1000 # [milliseconds] time between each reading
+        
