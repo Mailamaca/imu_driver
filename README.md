@@ -59,7 +59,7 @@ the encoders order is:
 - spur gear (high gear ratio = 1:5.22, low gear ratio  = 1:14.45)
 - tick at spur gear / round = 10
   
-- wheel radious = 0.559 meter
+- wheel circumference = 0.559 meter
 - tick for wheel / round = 12
 
 

@@ -1,31 +1,27 @@
-#maila/custom_motors_interface:
+#maila/custom_encoders:
 #    ros__parameters:
 # removed for composition node    
 #(ref: https://github.com/ros2/rclcpp/issues/715  )
 
         topics:
-            in_mode: "/autonomous_driver"
-            in_manual_cmd: "/hw/manual_cmd"
-            in_auto_cmd: "/hw/autonomous_cmd"
-            in_emergency: "/hw/emergency_brake"
-            out_cmd_info: "/hw/info"
+            out_encoders: "/hw/encoders"
             
-        in_msg_max_period: 5000 # [milliseconds] if msg have period greater than this the car is forced to a neutral actuator position
-        command_period: 20 # [milliseconds] time between each motors command sent
-        out_msg_rate: 50 # [<command_period> callbacks] if =1 it sens each time it sends command to the motors 
+        out_msgs_period: 1000 # [milliseconds] time between each readings
+        i2c_slave_address: 0x09 # [-] 
         
-        use_real_pca9685: true
-        
-        max_steering: 1.0 # [radians] can use minus sign to correct the steering direction
-        steering_pwm:
-            center: 0.0697
-            dead_range: 0.0
-            range: 0.016
-            max_pwm: 4096
-
-        max_throttle: 0.6 # full throttle of the car (set up 60% of the range for safety reason)
-        throttle_pwm:
-            center: 0.0748
-            dead_range: 0.0015
-            range: 0.025
-            max_pwm: 4096
+        enc0:
+            id: 0 # [-] info inside 'maila_msgs/msg/encoder'
+            scale_factor: 0.0039505 # [meter/tick] lowGear: 0.0039505 highGear: 0.010936
+	enc1:
+            id: 1 # [-] info inside 'maila_msgs/msg/encoder'
+            scale_factor: 0.046583 # [meter/tick]
+	enc2:
+            id: 2 # [-] info inside 'maila_msgs/msg/encoder'
+            scale_factor: 0.046583 # [meter/tick]
+	enc3:
+            id: 3 # [-] info inside 'maila_msgs/msg/encoder'
+            scale_factor: 0.046583 # [meter/tick]
+	enc4:
+            id: 4 # [-] info inside 'maila_msgs/msg/encoder'
+            scale_factor: 0.046583 # [meter/tick]
+	
