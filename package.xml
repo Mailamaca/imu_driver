@@ -15,6 +15,7 @@
   <depend>rcutils</depend>
   <depend>i2c_interfaces</depend>
   <depend>sensor_msgs</depend>
+  <depend>geometry_msgs</depend>
 
   <exec_depend>launch_ros</exec_depend>
 

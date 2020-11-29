@@ -12,34 +12,35 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef COMPOSITION__ENCODERS_COMPONENT_HPP_
-#define COMPOSITION__ENCODERS_COMPONENT_HPP_
+#ifndef COMPOSITION__IMU_DRIVER_COMPONENT_HPP_
+#define COMPOSITION__IMU_DRIVER_COMPONENT_HPP_
 
-#include "encoders/visibility_control.h"
+#include "imu_driver/visibility_control.h"
 
 #include "i2c_interfaces/srv/i2c_command.hpp"
-#include "maila_msgs/msg/encoder.hpp"
-#include "maila_msgs/msg/encoder_array.hpp"
+#include "geometry_msgs/msg/vector3.hpp"
+#include "geometry_msgs/msg/quaternion.hpp"
+#include "sensor_msgs/msg/imu.hpp"
 
 #include "rclcpp/rclcpp.hpp"
 
 #include <string>
 
 
-#define ESP32_ENC_REG 0x10
-#define ESP32_ENC_NUMS 5
+#define ESP32_IMU_REG 0x20
+#define ESP32_IMU_LENGTH 12
 
 using namespace std::chrono_literals;
 using std::placeholders::_1;
 
-namespace encoders
+namespace imu_driver
 {
 
-class EncodersComponent : public rclcpp::Node
+class ImuDriverComponent : public rclcpp::Node
 {
 public:
   COMPOSITION_PUBLIC
-  explicit EncodersComponent(const rclcpp::NodeOptions & options);
+  explicit ImuDriverComponent(const rclcpp::NodeOptions & options);
 
 private:
   rclcpp::TimerBase::SharedPtr timer_command;
@@ -50,7 +51,7 @@ private:
   bool call_i2c_command_service(std::shared_ptr<i2c_interfaces::srv::I2cCommand::Request> request, std::function<void(std::shared_ptr<i2c_interfaces::srv::I2cCommand::Response>)> fun);
   bool wait_for_i2c_command_service();
 
-  rclcpp::Publisher<maila_msgs::msg::EncoderArray>::SharedPtr pub_info;
+  rclcpp::Publisher<sensor_msgs::msg::Imu>::SharedPtr pub_info;
   
   void create_subscriptions();
   void create_publishers();
@@ -60,21 +61,19 @@ private:
   void initialize();
   
   void read_cb(std::shared_ptr<i2c_interfaces::srv::I2cCommand::Response> response);
-  maila_msgs::msg::Encoder encoderCalculation(int idx, uint16_t tick, uint32_t micros);
 
   
-  std::string encoders_topic_name;    // = "/hw/encoders";
+  std::string imu_topic_name;    // = "/hw/imu_raw";
     
   int out_msgs_period;
-  int i2c_slave_address;
+  int i2c_slave_address;  
   
-  uint8_t ids[ESP32_ENC_NUMS];
-  float scale_factors[ESP32_ENC_NUMS];   
-  float distances[ESP32_ENC_NUMS];
-  
-  
+  union unionfloat{
+    float i;
+    uint8_t c[4];
+  };
 };
 
 }  // namespace encoders
 
-#endif  // COMPOSITION__ENCODERS_COMPONENT_HPP_
+#endif  // COMPOSITION__IMU_DRIVER_COMPONENT_HPP_

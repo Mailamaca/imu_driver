@@ -1,27 +1,10 @@
-#maila/custom_encoders:
+#maila/custom_imu_driver:
 #    ros__parameters:
 # removed for composition node    
 #(ref: https://github.com/ros2/rclcpp/issues/715  )
 
         topics:
-            out_encoders: "/hw/encoders"
+            out_imu: "/hw/imu_raw"
             
-        out_msgs_period: 1000 # [milliseconds] time between each readings
+        out_msgs_period: 100 # [milliseconds] time between each readings
         i2c_slave_address: 0x09 # [-] 
-        
-        enc0:
-            id: 0 # [-] info inside 'maila_msgs/msg/encoder'
-            scale_factor: 0.0039505 # [meter/tick] lowGear: 0.0039505 highGear: 0.010936
-	enc1:
-            id: 1 # [-] info inside 'maila_msgs/msg/encoder'
-            scale_factor: 0.046583 # [meter/tick]
-	enc2:
-            id: 2 # [-] info inside 'maila_msgs/msg/encoder'
-            scale_factor: 0.046583 # [meter/tick]
-	enc3:
-            id: 3 # [-] info inside 'maila_msgs/msg/encoder'
-            scale_factor: 0.046583 # [meter/tick]
-	enc4:
-            id: 4 # [-] info inside 'maila_msgs/msg/encoder'
-            scale_factor: 0.046583 # [meter/tick]
-	

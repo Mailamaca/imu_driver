@@ -1,4 +1,4 @@
-#include "encoders/encoders_component.hpp"
+#include "imu_driver/imu_driver_component.hpp"
 
 #include <chrono>
 #include <functional>
@@ -7,12 +7,12 @@
 #include <atomic>
 
 
-namespace encoders
+namespace imu_driver
 {
 
-EncodersComponent::EncodersComponent(const rclcpp::NodeOptions & options)
-: Node("Encoders", options) {
-  RCLCPP_INFO( this->get_logger(), "EncodersComponent::EncodersComponent");
+ImuDriverComponent::ImuDriverComponent(const rclcpp::NodeOptions & options)
+: Node("ImuDriverComponent", options) {
+  RCLCPP_INFO( this->get_logger(), "ImuDriverComponent::ImuDriverComponent");
 
   load_parameters();    
   
@@ -24,11 +24,11 @@ EncodersComponent::EncodersComponent(const rclcpp::NodeOptions & options)
 }
 
 
-void EncodersComponent::load_parameters() {
+void ImuDriverComponent::load_parameters() {
 
-  this->declare_parameter<std::string>("topics.out_encoders", "a");
-  this->get_parameter("topics.out_encoders", encoders_topic_name);
-  //RCLCPP_INFO( this->get_logger(), "topics.out_encoders: %s", encoders_topic_name.c_str());
+  this->declare_parameter<std::string>("topics.out_imu", "a");
+  this->get_parameter("topics.out_imu", imu_topic_name);
+  //RCLCPP_INFO( this->get_logger(), "topics.out_imu: %s", imu_topic_name.c_str());
 
   this->declare_parameter<int>("out_msgs_period", 10000);
   this->get_parameter("out_msgs_period", out_msgs_period);
@@ -36,43 +36,32 @@ void EncodersComponent::load_parameters() {
   this->declare_parameter<int>("i2c_slave_address", 10000);
   this->get_parameter("i2c_slave_address", i2c_slave_address);
 
-  for (int i=0; i < ESP32_ENC_NUMS; i++) {
-  
-    std::string str_id = "enc" + std::to_string(i) + ".id";
-    this->declare_parameter<uint8_t>(str_id, 1);
-    this->get_parameter(str_id, ids[i]);
-    
-    std::string str_sf = "enc" + std::to_string(i) + ".scale_factor";
-    this->declare_parameter<float>(str_sf, 1);
-    this->get_parameter(str_sf, scale_factors[i]);
-  }
-
 }
 
-void EncodersComponent::create_subscriptions() {
+void ImuDriverComponent::create_subscriptions() {
   //subs_mode = this->create_subscription<maila_msgs::msg::VehicleMode>(
   //  mode_topic_name, 10, std::bind(&MotorComponent::subs_mode_callback, this, _1));
   //this->start_timer_subs_mode_timeout();
 
 }
 
-void EncodersComponent::create_publishers() {
-  pub_info = this->create_publisher<maila_msgs::msg::EncoderArray>(encoders_topic_name, 10);
+void ImuDriverComponent::create_publishers() {
+  pub_info = this->create_publisher<sensor_msgs::msg::Imu>(imu_topic_name, 10);
   
 }
 
-void EncodersComponent::create_clients() {
+void ImuDriverComponent::create_clients() {
   i2c_command = this->create_client<i2c_interfaces::srv::I2cCommand>("i2c_command");
 
 }
 
-void EncodersComponent::initialize() {
+void ImuDriverComponent::initialize() {
     
   this->start_timer_command();
 
 }
 
-bool EncodersComponent::call_i2c_command_service(std::shared_ptr<i2c_interfaces::srv::I2cCommand::Request> request, std::function<void(std::shared_ptr<i2c_interfaces::srv::I2cCommand::Response>)> cb) {
+bool ImuDriverComponent::call_i2c_command_service(std::shared_ptr<i2c_interfaces::srv::I2cCommand::Request> request, std::function<void(std::shared_ptr<i2c_interfaces::srv::I2cCommand::Response>)> cb) {
 
   //RCLCPP_INFO( this->get_logger(), "call_i2c_command_service");
 
@@ -102,7 +91,7 @@ bool EncodersComponent::call_i2c_command_service(std::shared_ptr<i2c_interfaces:
   return true;
 }
 
-void EncodersComponent::read_cb(std::shared_ptr<i2c_interfaces::srv::I2cCommand::Response> response) {
+void ImuDriverComponent::read_cb(std::shared_ptr<i2c_interfaces::srv::I2cCommand::Response> response) {
   
   //RCLCPP_INFO( this->get_logger(), "pca9685_cmd_cb");
 
@@ -112,66 +101,70 @@ void EncodersComponent::read_cb(std::shared_ptr<i2c_interfaces::srv::I2cCommand:
     return;
   }
   
-  if (response->data_received.size() != (4+2*ESP32_ENC_NUMS)) {
-    RCLCPP_ERROR( this->get_logger(), "Error on read from i2c, size diff from 14");
+  if (response->data_received.size() != (ESP32_IMU_LENGTH)) {
+    RCLCPP_ERROR( this->get_logger(), "Error on read from i2c, size %d diff from %d", response->data_received.size(),ESP32_IMU_LENGTH);
     return;
   }  
   
   int idx = 0;
-  uint32_t micros = ((uint32_t)response->data_received.at(idx++) << 24) |
-                    ((uint32_t)response->data_received.at(idx++) << 16) |
-                    ((uint32_t)response->data_received.at(idx++) <<  8) |
-                    ((uint32_t)response->data_received.at(idx++) <<  0);
-        
-  std::vector<maila_msgs::msg::Encoder> encoders_vect;
-  for (int i =0; i < ESP32_ENC_NUMS; i++) {
-    uint16_t tk_enc = ((uint16_t)response->data_received.at(idx++) << 8) |
-                      ((uint16_t)response->data_received.at(idx++) << 0);
-    encoders_vect.push_back(encoderCalculation(i, tk_enc, micros));  
-  }
+  ImuDriverComponent::unionfloat aX;
+  RCLCPP_INFO( this->get_logger(),
+               "0x%02x 0x%02x 0x%02x 0x%02x ",
+               response->data_received.at(0),
+               response->data_received.at(1),
+               response->data_received.at(2),
+               response->data_received.at(3));
+
+  aX.c[0] = response->data_received.at(idx+0);
+  aX.c[1] = response->data_received.at(idx+1);
+  aX.c[2] = response->data_received.at(idx+2);
+  aX.c[3] = response->data_received.at(idx+3);  
+  idx += 4;
+  ImuDriverComponent::unionfloat aY;
+  aY.c[0] = response->data_received.at(idx+0);
+  aY.c[1] = response->data_received.at(idx+1);
+  aY.c[2] = response->data_received.at(idx+2);
+  aY.c[3] = response->data_received.at(idx+3);  
+  idx += 4;
+  ImuDriverComponent::unionfloat aZ;
+  aZ.c[0] = response->data_received.at(idx+0);
+  aZ.c[1] = response->data_received.at(idx+1);
+  aZ.c[2] = response->data_received.at(idx+2);
+  aZ.c[3] = response->data_received.at(idx+3);  
+  idx += 4;
   
-  maila_msgs::msg::EncoderArray encoders_msg;
-  encoders_msg.encoders = encoders_vect;
-  pub_info->publish(encoders_msg);
   
+  geometry_msgs::msg::Vector3 linear_acceleration;
+  linear_acceleration.x = aX.i;
+  linear_acceleration.y = aY.i;
+  linear_acceleration.z = aZ.i;
+
+
+  sensor_msgs::msg::Imu imu_msg;
+  imu_msg.linear_acceleration = linear_acceleration;
+  pub_info->publish(imu_msg);
+ 
   
 }
 
-maila_msgs::msg::Encoder EncodersComponent::encoderCalculation(int idx, uint16_t tick, uint32_t micros) {
-
-  this->distances[idx] += (float)tick * scale_factors[idx];
-  
-  float speed = (float)tick * scale_factors[idx] / ((float)micros * 1000000); 
-  
-  float speed_cov = 1;     
-
-  maila_msgs::msg::Encoder msg;
-  msg.id = ids[idx];
-  msg.distance = this->distances[idx];
-  msg.speed = speed;
-  msg.speed_covariance = speed_cov;
-  
-  return msg;
-}
-
-void EncodersComponent::start_timer_command() {
+void ImuDriverComponent::start_timer_command() {
   std::chrono::duration<int, std::milli> timeout_time(out_msgs_period);
   this->timer_command = this->create_wall_timer(
-    timeout_time, std::bind(&EncodersComponent::timer_command_callback, this)
+    timeout_time, std::bind(&ImuDriverComponent::timer_command_callback, this)
     );
 }
 
-void EncodersComponent::timer_command_callback() {
+void ImuDriverComponent::timer_command_callback() {
   
   auto request = std::make_shared<i2c_interfaces::srv::I2cCommand::Request>();
   request->slave = i2c_slave_address;
-  request->reg = ESP32_ENC_REG;
+  request->reg = ESP32_IMU_REG;
   request->write = false;
-  request->length = 14;
+  request->length = ESP32_IMU_LENGTH;
   std::vector<uint8_t> vectData;
   request->data_to_send = vectData;
 
-  auto fp = std::bind(&EncodersComponent::read_cb, this, _1);
+  auto fp = std::bind(&ImuDriverComponent::read_cb, this, _1);
   call_i2c_command_service(request, fp); 
 
 }
@@ -183,5 +176,5 @@ void EncodersComponent::timer_command_callback() {
 // Register the component with class_loader.
 // This acts as a sort of entry point, allowing the component to be discoverable when its library
 // is being loaded into a running process.
-RCLCPP_COMPONENTS_REGISTER_NODE(encoders::EncodersComponent)
+RCLCPP_COMPONENTS_REGISTER_NODE(imu_driver::ImuDriverComponent)
 
