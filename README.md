@@ -1,5 +1,5 @@
-# encoders
-ROS Node to interact with encoders
+# imu_driver
+ROS Node to interact with imu
 
 ## Initialize ROS2 package
 
@@ -41,6 +41,7 @@ The communication is made on I2C where the board has been setup as a SLAVE with 
 
 ### Registers to work with
 
+<<<<<<< Updated upstream
 1. Read 0x09
 
 - It will respond with 1 byte, how many encoders are programmed (uint8_t)
@@ -62,6 +63,21 @@ the encoders order is:
 - wheel circumference = 0.559 meter
 - tick for wheel / round = 12
 
+=======
+1. Read 0x20
+
+- It will respond with (9*4) bytes; 4 bytes for each value (float32_t)
+the order is:
+1. acceleration on X (m/s)
+1. acceleration on Y (m/s)
+1. acceleration on Z (m/s)
+1. gyro on X (rad/s)
+1. gyro on Y (rad/s)
+1. gyro on Z (rad/s)
+1. mag on X (uT)
+1. mag on Y (uT)
+1. mag on Z (uT)
+>>>>>>> Stashed changes
 
 
 # Copyright and License

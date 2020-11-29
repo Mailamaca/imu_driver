@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.5)
-project(encoders)
+project(imu_driver)
 
 # Default to C++14
 if(NOT CMAKE_CXX_STANDARD)
@@ -16,25 +16,25 @@ find_package(rclcpp REQUIRED)
 find_package(rclcpp_components REQUIRED)
 find_package(rcutils REQUIRED)
 find_package(i2c_interfaces REQUIRED)
-find_package(maila_msgs REQUIRED)
+find_package(sensor_msgs REQUIRED)
 
 include_directories(include)
 
 # create ament index resource which references the libraries in the binary dir
 set(node_plugins "")
 
-add_library(encoders_component SHARED
-  src/encoders_component.cpp)
-target_compile_definitions(encoders_component
+add_library(imu_driver_component SHARED
+  src/imu_driver_component.cpp)
+target_compile_definitions(imu_driver_component
   PRIVATE "COMPOSITION_BUILDING_DLL")
-ament_target_dependencies(encoders_component
+ament_target_dependencies(imu_driver_component
   "i2c_interfaces"
   "rclcpp"
   "rclcpp_components"
-  "maila_msgs"
+  "sensor_msgs"
   )
-rclcpp_components_register_nodes(encoders_component "encoders::Encoders")
-set(node_plugins "${node_plugins}encoders::Encoders;$<TARGET_FILE:encoders_component>\n")
+rclcpp_components_register_nodes(imu_driver_component "imu_driver::ImuDriverComponent")
+set(node_plugins "${node_plugins}imu_driver::ImuDriverComponent;$<TARGET_FILE:imu_driver_component>\n")
 
 # since the package installs libraries without exporting them
 # it needs to make sure that the library path is being exported
@@ -44,7 +44,7 @@ if(NOT WIN32)
 endif()
 
 install(TARGETS
-  encoders_component
+  imu_driver_component
   ARCHIVE DESTINATION lib
   LIBRARY DESTINATION lib
   RUNTIME DESTINATION bin)
